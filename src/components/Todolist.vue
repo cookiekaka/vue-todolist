@@ -1,48 +1,49 @@
 <template>
 <div class="todo-list">
-  <div class="todo-header">
-    <input class="todo-header-input" autofocus autocomplete="off"
+  <div>
+    <input class="todo-add" autofocus autocomplete="off"
       placeholder="请输入任务，并按回车键结束"
       v-model="todoText"
       @keyup.enter="addTodo" />
   </div>
   <div class="todo-main">
-    <li class="todo-main-li" v-for="todo in todos" :key="todo.id">
+    <li class="todo-item" v-for="todo in todoList" :key="todo.id">
       <label class="todo-main-label">
-        <input calss="todo-main-input" type="checkbox" v-model="todo.isDone" />
-        <span class="todo-main-label-span">{{ todo.todoText }}</span>
+        <input type="checkbox" v-model="todo.isDone" />
+        <span class="todo-text">{{ todo.todoText }}</span>
       </label>
-        <button class="todo-list-button" @click="removeTodo(todo)">删除</button>
+        <button class="remove-todo-btn" @click="removeTodo(todo)">删除</button>
     </li>
+    <div class="no-todo" v-show="noDone">恭喜您已完成所有任务</div>
   </div>
-  <div class="todo-footer">
+  <div>
     <label class="todo-footer-label">
-      <input class="todo-footer-input" type="checkbox" v-model="allDone" />
+      <input class="all-done" type="checkbox" v-model="allDone" />
       <span>全选</span>
     </label>
     <span class="footer-info">
       <span class="done-count">已完成{{ doneCount }}</span>
       <span>/全部{{ allCount }}</span>
     </span>
-    <button class="todo-footer-button" @click="clearDone">清除已完成任务</button>
+    <button class="clear-done" @click="clearDone">清除已完成任务</button>
   </div>
 </div>
 </template>
 
 <script>
 // localStorage persistence
-let STORAGE_KEY = 'todos-vuejs-2.0';
+let STORAGE_KEY = 'todoList-vuejs-2.0';
 let todoStorage = {
   fetch: function () {
-    let todos = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    todos.forEach((todo, index) => {
+    let todoList = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    todoList.forEach((todo, index) => {
       todo.id = index;
     }) 
-    todoStorage.uid = todos.length;
-    return todos;
+    todoStorage.uid = todoList.length;
+    return todoList;
   },
-  save: function (todos) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+  save: function (todoList) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(todoList));
   }
 }
 
@@ -50,15 +51,16 @@ export default {
   name: 'todolist',
   data () {
     return {
-      todos: todoStorage.fetch(),
+      todoList: todoStorage.fetch(),
       todoText: '',
     }
   },
 
   watch: {
-    todos: {
-      handler: function (todos) {
-        todoStorage.save(todos);
+    todoList: {
+      handler: function (todoList) {
+        console.log(todoList);
+        todoStorage.save(todoList);
       },
       deep: true
     }
@@ -67,21 +69,24 @@ export default {
   computed: {
     allDone: {
       get: function () {
-        return this.todos.every((todo) => todo.isDone);
+        return this.todoList.length !== 0 && this.todoList.every((todo) => todo.isDone);
       },
       set: function (value) {
-        this.todos.forEach((todo) => {
+        this.todoList.forEach((todo) => {
           todo.isDone = value;
         })
       }
     },
     doneCount: function () {
-      return this.todos.filter((todo) => todo.isDone).length;
+      return this.todoList.filter((todo) => todo.isDone).length;
     },
       
     allCount: function () {
-      return this.todos.length;
+      return this.todoList.length;
     },
+    noDone: function () {
+      return this.todoList.length === 0;
+    }
   },
 
   methods: {
@@ -90,7 +95,7 @@ export default {
       if (!value) {
         return;
       }
-      this.todos.push({
+      this.todoList.push({
         id: todoStorage.uid++,
         todoText: value,
         isDone: false
@@ -98,10 +103,10 @@ export default {
       this.todoText = '';
     },
     removeTodo: function (todo) {
-      this.todos.splice(this.todos.indexOf(todo), 1);
+      this.todoList.splice(this.todoList.indexOf(todo), 1);
     },
     clearDone: function () {
-      this.todos = this.todos.filter((todo) => !todo.isDone);
+      this.todoList = this.todoList.filter((todo) => !todo.isDone);
     },
   }
 }
@@ -133,7 +138,7 @@ a {
   font-size: 14px;
   line-height: 30px;
 }
-.todo-list-button, .todo-footer-button {
+.remove-todo-btn, .clear-done {
   float: right;
   margin-top: 5px;
   padding: 2px 8px;
@@ -146,7 +151,7 @@ a {
   border-radius: 4px;
   cursor: pointer;
 }
-.todo-header-input {
+.todo-add {
   width: 480px;
   padding: 5px;
   border: 1px solid #ccc;
@@ -154,7 +159,7 @@ a {
   margin-bottom: 10px;
   font-size: 14px;
 }
-.todo-main-li {
+.todo-item {
   float: left;
   width: 480px;
   margin-left: 4px;
@@ -163,7 +168,7 @@ a {
   border-bottom: none;
   list-style-type: none;
 }
-.todo-main-li:last-of-type {
+.todo-item:last-of-type {
   border-bottom: 1px solid #ccc;
   margin-bottom: 8px;
 }
@@ -173,7 +178,7 @@ a {
 .todo-main input:checked+span {
   text-decoration: line-through;
 }
-.todo-main-label-span {
+.todo-text {
   vertical-align: middle;
   margin-left: 5px;
 }
@@ -181,7 +186,7 @@ a {
   float: left;
   margin-left: 10px;
 }
-.todo-footer-input {
+.all-done {
   margin-right: 9px;
 }
 .footer-info {
@@ -191,7 +196,13 @@ a {
 .done-count {
   color: rgb(25, 161, 25);
 }
-.todo-footer-button {
+.clear-done {
   margin-right: 10px;
+}
+.no-todo {
+  width: 490px;
+  border: 1px solid #ccc;
+  margin: 0 auto 8px auto;
+  text-align: center;
 }
 </style>
